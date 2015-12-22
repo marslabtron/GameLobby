@@ -28,11 +28,11 @@ class GameClient(asyncore.dispatcher):
         self.is_writable = True
 
     def game_answer(self):
-        self.start_ans = datetime.now()
+        self.start_ans = datetime.datetime.now()
         ans = raw_input("ans:")
-        self.end_ans = datetime.now()
-        delta_time = self.end_ans - self.start_ans
-        self.data_to_send = ans + ' ' + str(delta_time.seconds)
+        self.end_ans = datetime.datetime.now()
+        delta_time = (self.end_ans - self.start_ans)
+        self.data_to_send = ans + '\n' + str(delta_time.seconds)
         self.is_writable = True
 
     def welcome(self):
@@ -82,6 +82,23 @@ class GameClient(asyncore.dispatcher):
 
         self.cmd_to_send()
 
+    def continue_game(self):
+        print "Continue or not?"
+        print "1. continue"
+        print "2. quit room"
+
+        chosen_num = '0'
+        while chosen_num != '1' and chosen_num != '2':
+            chosen_num = raw_input("Your choice:")
+            if chosen_num == '1':
+                print CONTINUE_GAME
+            elif chosen_num == '2':
+                self.data_to_send = 'qt' + ' '
+                self.is_writable = True
+            else:
+                print "Please choose 1 or 2!"
+
+
     def find_rooms(self):
         pass
 
@@ -115,14 +132,20 @@ class GameClient(asyncore.dispatcher):
             pass
         elif self.data_to_receive == SUCCESS_EROOM:
             pass
-        elif len(CURRENT_ROOMS and self.data_to_receive) != 0:
+        elif self.data_to_receive == SUCCESS_QROOM or self.data_to_receive == DISMISS_ROOM:
+            self.cmd_to_send()
+        elif CURRENT_ROOMS in self.data_to_receive:
             self.cmd_to_send()
         elif self.data_to_receive == FAIL_CROOM:
-            self.game_hints()
+            self.cmd_to_send()
         elif self.data_to_receive == FAIL_EROOM:
-            self.game_hints()
-        elif len(START_GAME and self.data_to_receive) != 0:
+            self.cmd_to_send()
+        elif self.data_to_receive == FAIL_QROOM:
+            self.cmd_to_send()
+        elif START_GAME in self.data_to_receive:
             self.game_answer()
+        elif self.data_to_receive == WIN_GAME or self.data_to_receive == LOSE_GAME:
+            self.continue_game()
         elif self.data_to_receive == INVALID_COMMAND:
             self.cmd_to_send()
 

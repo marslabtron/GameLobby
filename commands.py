@@ -32,7 +32,7 @@ WIN_GAME = 'Congratulations! You are the winner!'
 LOSE_GAME = 'Sorry! You lose the game.'
 START_GAME = 'Let\'s start the 21 points game! There are four numbers below,\n' \
              'please write the answer like "21game ANSWER" in 15s.'
-
+CONTINUE_GAME = 'Please wait, it\'ll start half-hourly...'
 
 DEALED_MSG = 'Already done.'
 

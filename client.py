@@ -20,10 +20,14 @@ class GameClient(asyncore.dispatcher):
         self.start_ans = 0
         self.end_ans = 0
 
+        self.chat_msg = []
+
         self.welcome()
 
     def cmd_to_send(self):
         cmd = raw_input("cmd:")
+        if cmd == READY_START or cmd == QUIT_ROOM or cmd == MSG:
+            cmd += ' '
         self.data_to_send = cmd
         self.is_writable = True
 
@@ -94,20 +98,10 @@ class GameClient(asyncore.dispatcher):
                 print CONTINUE_GAME
                 self.cmd_to_send()
             elif chosen_num == '2':
-                self.data_to_send = 'qt' + ' '
+                self.data_to_send = QUIT_ROOM + ' '
                 self.is_writable = True
             else:
                 print "Please choose 1 or 2!"
-
-
-    def find_rooms(self):
-        pass
-
-    def enter_room(self):
-        pass
-
-    def quit_room(self):
-        pass
 
     def writable(self):
         return self.is_writable
@@ -151,7 +145,11 @@ class GameClient(asyncore.dispatcher):
             self.continue_game()
         elif self.data_to_receive == WIN_GAME or self.data_to_receive == LOSE_GAME:
             self.continue_game()
+        elif CHAT_MSG in self.data_to_receive:
+            self.cmd_to_send()
         elif self.data_to_receive == INVALID_COMMAND:
+            self.cmd_to_send()
+        else:
             self.cmd_to_send()
 
 

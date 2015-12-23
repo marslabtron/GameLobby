@@ -11,6 +11,7 @@ FIND_ROOMS = 'find'
 QUIT_ROOM = 'qt'
 GAME = '21game'
 READY_START = 'start'
+MSG = 'msg'
 
 # responses
 INVALID_COMMAND = 'Invalid command!'
@@ -37,6 +38,8 @@ READY_GAME = 'Ready for game. Waiting for others...'
 CONTINUE_GAME = 'Please wait, it\'ll start half-hourly...'
 WRONG_EXPRESSION = 'Wrong expression!'
 DEALED_MSG = 'Already done.'
+CHAT_MSG = 'Chatting...\n'
+NO_MSG = 'No message now...'
 
 # database
 DATABASE = 'database.dat'

@@ -29,7 +29,9 @@ class MsgHandler(asyncore.dispatcher):
             'ready': False,
             'answer': -1,
             'ans_time': -1,
-            'game_reply': LOSE_GAME
+            'game_reply': LOSE_GAME,
+
+            'chat_msg': []
         }
 
     def attach_server(self, server):
@@ -70,6 +72,8 @@ class MsgHandler(asyncore.dispatcher):
             return CHAT_ROOM, self.__handle_chatRoom_msg(msg)
         elif event_flag == CHAT:
             return CHAT, self.__handle_chat_msg(msg)
+        elif event_flag == MSG:
+            return MSG, self._handle_msg_msg(msg)
         elif event_flag == CREATE_ROOM:
             return CREATE_ROOM, self.__handle_create_room_msg(msg)
         elif event_flag == ENTER_ROOM:
@@ -122,18 +126,55 @@ class MsgHandler(asyncore.dispatcher):
 
     def __handle_chatAll_msg(self, msg):
         data = str(msg)
+        lobby = '(lobby msg)'
+        player = self.client['name'] + ':'
+        data = lobby + player + data + '\n'
         msg_handlers = self.server.msg_handlers
         for handler in msg_handlers:
-            handler.data_to_send = data
-            handler.is_writable = True
-        return data
+            if handler.client['is_online']:
+                handler.client['chat_msg'].append(data)
+        return CHAT_MSG + data
 
     def __handle_chatRoom_msg(self, msg):
-        pass
+        data = str(msg)
+        room_msg = '(room msg)'
+        player = self.client['name'] + ':'
+        data = room_msg + player + data + '\n'
+        room = self.server.find_room(self.client['room_id'])
+        for member in room.members:
+            msg_handler = self.server.find_handler(member)
+            msg_handler.client['chat_msg'].append(data)
+        return CHAT_MSG + data
 
     def __handle_chat_msg(self, msg):
         data = str(msg)
-        self.data_to_send = data
+        private_msg = '(private msg)'
+        player = self.client['name'] + ':'
+        lists = data.split(' ')
+        name = lists[0]
+        chat = ''
+        for i in range(1, len(lists)):
+            chat += lists[i] + ' '
+        chat = private_msg + player + chat + '\n'
+        msg_handler = self.server.find_handler(name)
+        msg_handler.client['chat_msg'].append(chat)
+        return CHAT_MSG + chat
+
+    def _handle_msg_msg(self, msg):
+        data = str(msg)
+        msgs = self.client['chat_msg']
+        totals = ''
+        for msg in msgs:
+            totals += msg
+
+        if totals:
+            self.data_to_send = totals
+        else:
+            self.data_to_send = NO_MSG
+        self.is_writable = True
+
+        self.client['chat_msg'] = []
+        return DEALED_MSG
 
     def __handle_create_room_msg(self, msg):
         room_name = str(msg)

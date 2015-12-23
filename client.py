@@ -23,7 +23,7 @@ class GameClient(asyncore.dispatcher):
 
     def cmd_to_send(self):
         cmd = raw_input("cmd:")
-        if cmd == READY_START or cmd == QUIT_ROOM or cmd == MSG:
+        if cmd == READY_START or cmd == QUIT_ROOM or cmd == MSG or cmd == LOGOUT:
             cmd += ' '
         self.data_to_send = cmd
         self.is_writable = True
@@ -76,9 +76,10 @@ class GameClient(asyncore.dispatcher):
         print "2. 'find all' -- find all rooms"
         print "3. 'er roomname' -- enter existing room"
         print "4. 'qt roomname' -- quit from room"
-        print "5. 'start' -- be ready for the game"
-        print "6. '21game answer' -- send your answer"
-        print "7. chatting mode"
+        print "5. 'logout' -- logout the lobby"
+        print "6. 'start' -- be ready for the game"
+        print "7. '21game answer' -- send your answer"
+        print "8. chatting mode"
         print " 1) 'chatAll msg' -- broadcast to all players"
         print " 2) 'chatRoom msg' -- broadcast to players in the room"
         print " 3) 'chat username msg' -- chat with somebody"
@@ -125,6 +126,8 @@ class GameClient(asyncore.dispatcher):
             self.login()
         elif self.data_to_receive == SUCCESS_LOGIN:
             self.game_hints()
+        elif self.data_to_receive == SUCCESS_LOGOUT:
+            self.welcome()
         elif self.data_to_receive == SUCCESS_CROOM:
             self.cmd_to_send()
         elif self.data_to_receive == SUCCESS_EROOM:

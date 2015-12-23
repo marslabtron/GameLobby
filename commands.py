@@ -1,6 +1,7 @@
 # event flags
 INVALID_FLAG = 'invalid'
 LOGIN = 'login'
+LOGOUT = 'logout'
 ACCOUNT = 'account'
 CHAT_ALL = 'chatAll'
 CHAT_ROOM = 'chatRoom'
@@ -16,7 +17,8 @@ MSG = 'msg'
 # responses
 INVALID_COMMAND = 'Invalid command!'
 ALREADY_ONLINE = 'Already online.'
-SUCCESS_LOGIN = 'Successful Login. Now you\'ve in the 21 points game lobby.'
+SUCCESS_LOGIN = 'Successful login. Now you\'ve in the 21 points game lobby.'
+SUCCESS_LOGOUT = 'Successful logout.'
 INCORRECT_PWD = 'Incorrect user name or password!'
 CONFIRM_PWD = 'The passwords are not the same.'
 EXIST_ACCOUNT = 'The user name has already exists.'

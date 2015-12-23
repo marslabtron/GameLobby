@@ -64,6 +64,8 @@ class MsgHandler(asyncore.dispatcher):
 
         if event_flag == LOGIN:
             return LOGIN, self.__handle_login_msg(msg)
+        elif event_flag == LOGOUT:
+            return LOGOUT, self.__handle_logout_msg(msg)
         elif event_flag == ACCOUNT:
             return ACCOUNT, self.__handle_account_msg(msg)
         elif event_flag == CHAT_ALL:
@@ -108,6 +110,48 @@ class MsgHandler(asyncore.dispatcher):
                 self.client['logtime'] = datetime.datetime.now()
                 return SUCCESS_LOGIN
         return INCORRECT_PWD
+
+    def __handle_logout_msg(self, msg):
+        data = str(msg)
+
+        now_time = datetime.datetime.now()
+        delta_time = now_time - self.client['logtime']
+        with open(self.server.database, 'r') as file:
+            users = json.load(file)
+        for user in users['accounts']:
+            if user['name'] == self.client['name']:
+                user['online_time'] += delta_time.seconds
+                break
+        with open(self.server.database, 'w') as file:
+            json.dump(users, file)
+
+        self.client['name'] = 'visitor'
+        self.client['is_online'] = False
+        self.client['logtime'] = 0
+
+        if self.client['room_id'] == -1:
+            return SUCCESS_LOGOUT
+
+        room = self.server.find_room(self.client['room_id'])
+        rooms = self.server.rooms
+        if self.client['is_owner']:
+            for member in room.members:
+                msg_handler = self.server.find_handler(member)
+                msg_handler.client['room_id'] = -1
+                msg_handler.data_to_send = DISMISS_ROOM
+                msg_handler.is_writable = True
+            rooms.remove(room)
+        else:
+            self.client['room_id'] = -1
+            room.members.remove(self.client['name'])
+            room.number -= 1
+            self.data_to_send = SUCCESS_QROOM
+            self.is_writable = True
+
+        self.client['room_id'] = -1
+        self.client['is_owner'] = False
+
+        return SUCCESS_LOGOUT
 
     def __handle_account_msg(self, msg):
         data = str(msg)

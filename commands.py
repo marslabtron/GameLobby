@@ -10,6 +10,7 @@ ENTER_ROOM = 'er'
 FIND_ROOMS = 'find'
 QUIT_ROOM = 'qt'
 GAME = '21game'
+READY_START = 'start'
 
 # responses
 INVALID_COMMAND = 'Invalid command!'
@@ -32,8 +33,9 @@ WIN_GAME = 'Congratulations! You are the winner!'
 LOSE_GAME = 'Sorry! You lose the game.'
 START_GAME = 'Let\'s start the 21 points game! There are four numbers below,\n' \
              'please write the answer like "21game ANSWER" in 15s.'
+READY_GAME = 'Ready for game. Waiting for others...'
 CONTINUE_GAME = 'Please wait, it\'ll start half-hourly...'
-
+WRONG_EXPRESSION = 'Wrong expression!'
 DEALED_MSG = 'Already done.'
 
 # database

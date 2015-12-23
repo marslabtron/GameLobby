@@ -92,6 +92,7 @@ class GameClient(asyncore.dispatcher):
             chosen_num = raw_input("Your choice:")
             if chosen_num == '1':
                 print CONTINUE_GAME
+                self.cmd_to_send()
             elif chosen_num == '2':
                 self.data_to_send = 'qt' + ' '
                 self.is_writable = True
@@ -129,9 +130,9 @@ class GameClient(asyncore.dispatcher):
         elif self.data_to_receive == SUCCESS_LOGIN:
             self.game_hints()
         elif self.data_to_receive == SUCCESS_CROOM:
-            pass
+            self.cmd_to_send()
         elif self.data_to_receive == SUCCESS_EROOM:
-            pass
+            self.cmd_to_send()
         elif self.data_to_receive == SUCCESS_QROOM or self.data_to_receive == DISMISS_ROOM:
             self.cmd_to_send()
         elif CURRENT_ROOMS in self.data_to_receive:
@@ -142,8 +143,12 @@ class GameClient(asyncore.dispatcher):
             self.cmd_to_send()
         elif self.data_to_receive == FAIL_QROOM:
             self.cmd_to_send()
+        elif self.data_to_receive == READY_GAME:
+            pass
         elif START_GAME in self.data_to_receive:
             self.game_answer()
+        elif self.data_to_receive == WRONG_EXPRESSION:
+            self.continue_game()
         elif self.data_to_receive == WIN_GAME or self.data_to_receive == LOSE_GAME:
             self.continue_game()
         elif self.data_to_receive == INVALID_COMMAND:

@@ -18,11 +18,15 @@ class MsgHandler(asyncore.dispatcher):
 
         self.client = {
             'address': '127.0.0.1',
+
             'logtime': 0,
             'name': 'visitor',
             'is_online': False,
+
             'room_id': -1,
             'is_owner': False,
+
+            'ready': False,
             'answer': -1,
             'ans_time': -1,
             'game_reply': LOSE_GAME
@@ -74,6 +78,8 @@ class MsgHandler(asyncore.dispatcher):
             return FIND_ROOMS, self.__handle_find_rooms_msg(msg)
         elif event_flag == QUIT_ROOM:
             return QUIT_ROOM, self.__handle_quit_room_msg(msg)
+        elif event_flag == READY_START:
+            return READY_START, self.__handle_ready_game_msg(msg)
         elif event_flag == GAME:
             return GAME, self.__handle_21game_msg(msg)
         else:
@@ -139,11 +145,6 @@ class MsgHandler(asyncore.dispatcher):
         self.client['is_owner'] = True
         rooms.append(Room(room_name, self.client['name'], [self.client['name']]))
 
-        if not self.server.game_flag:
-            # self.server.start_game()
-            self.server.game_flag = True
-            self.server.start_game()
-
         return SUCCESS_CROOM
 
     def __handle_enter_room_msg(self, msg):
@@ -175,54 +176,61 @@ class MsgHandler(asyncore.dispatcher):
         if data and data != room_name:
             return FAIL_QROOM
 
+        room = self.server.find_room(room_name)
         rooms = self.server.rooms
-        for room in rooms:
-            if room.name == room_name:
-                if self.client['is_owner']:
-                    for member in room.members:
-                        msg_handler = self.server.find_handler(member)
-                        msg_handler.client['room_id'] = -1
-                        msg_handler.data_to_send = DISMISS_ROOM
-                        msg_handler.is_writable = True
-                    rooms.remove(room)
-                else:
-                    self.client['room_id'] = -1
-                    room.members.remove(self.client['name'])
-                    room.number -= 1
-                    self.data_to_send = SUCCESS_QROOM
-                    self.is_writable = True
-                break
-
-        if not rooms:
-            self.server.game_flag = False
+        if self.client['is_owner']:
+            for member in room.members:
+                msg_handler = self.server.find_handler(member)
+                msg_handler.client['room_id'] = -1
+                msg_handler.data_to_send = DISMISS_ROOM
+                msg_handler.is_writable = True
+            rooms.remove(room)
+        else:
+            self.client['room_id'] = -1
+            room.members.remove(self.client['name'])
+            room.number -= 1
+            self.data_to_send = SUCCESS_QROOM
+            self.is_writable = True
 
         return DEALED_MSG
+
+    def __handle_ready_game_msg(self, msg):
+
+        self.client['ready'] = True
+        room = self.server.find_room(self.client['room_id'])
+        for member in room.members:
+            msg_handler = self.server.find_handler(member)
+            if not msg_handler.client['ready']:
+                return READY_GAME
+        room.game_flag = True
+        self.server.start_game(room)
+        return READY_GAME
 
     def __handle_21game_msg(self, msg):
         data = str(msg)
         [ans, ans_time] = data.split('\n')
 
-        answer = eval(ans)
-        answer_time = float(ans_time)
+        try:
+            answer = eval(ans)
+            answer_time = float(ans_time)
+        except IOError as e:
+            return WRONG_EXPRESSION
 
         self.client['answer'] = answer
         self.client['ans_time'] = answer_time
 
         game_over = True
-        current_room = self.client['room_id']
-        rooms = self.server.rooms
-        for room in rooms:
-            if room.name == current_room:
-                members = room.members
-                for member in members:
-                    msg_handler = self.server.find_handler(member)
-                    if msg_handler.client['answer'] == -1:
-                        game_over = False
-                        break
-            break
+        room = self.server.find_room(self.client['room_id'])
+        members = room.members
+        for member in members:
+            msg_handler = self.server.find_handler(member)
+            if msg_handler.client['answer'] == -1:
+                game_over = False
+                break
 
         if game_over:
-            self.server.announce_results()
+            room.game_flag = False
+            self.server.announce_results(room)
         return DEALED_MSG
 
 
@@ -239,7 +247,6 @@ class GameServer(asyncore.dispatcher):
         self.msg_handlers = []
         self.rooms = []
 
-        self.game_flag = False
         self.time_limit = 15
         self.points = 21
 
@@ -251,7 +258,7 @@ class GameServer(asyncore.dispatcher):
         self.msg_handlers.append(msg_handler)
         msg_handler.attach_server(self)
 
-    def start_game(self):
+    def start_game(self, room):
         # now_time = datetime.datetime.time(datetime.datetime.now())
         # hour = now_time.hour
         # min = now_time.minute
@@ -266,32 +273,22 @@ class GameServer(asyncore.dispatcher):
         #     self.loop_game()
         # else:
         #     remaining_time = (59 - min) * 60 + (59 - second)
-        threading.Timer(15, self.loop_game).start()
+        threading.Timer(15, self.loop_game, [room]).start()
 
-
-
-    def loop_game(self):
-        if not self.game_flag:
+    def loop_game(self, room):
+        if not room.game_flag:
             return
 
-        # send game commands to every room
-        current_rooms = self.rooms
-        for current_room in current_rooms:
-            a = randint(0, 9)
-            b = randint(0, 9)
-            c = randint(0, 9)
-            d = randint(0, 9)
+        a = randint(0, 9)
+        b = randint(0, 9)
+        c = randint(0, 9)
+        d = randint(0, 9)
 
-            for member in current_room.members:
-                msg_handler = self.find_handler(member)
-
-                msg_handler.client['answer'] = -1
-                msg_handler.client['ans_time'] = -1
-                msg_handler.client['game_reply'] = LOSE_GAME
-
-                abcd = '%d %d %d %d' % (a, b, c, d)
-                msg_handler.data_to_send = START_GAME + '\n' + abcd
-                msg_handler.is_writable = True
+        for member in room.members:
+            msg_handler = self.find_handler(member)
+            abcd = '%d %d %d %d' % (a, b, c, d)
+            msg_handler.data_to_send = START_GAME + '\n' + abcd
+            msg_handler.is_writable = True
 
         # threading.Timer(20, self.announce_results).start() # game results
 
@@ -301,36 +298,40 @@ class GameServer(asyncore.dispatcher):
             if msg_handler.client['name'] == name:
                 return msg_handler
 
-    def announce_results(self):
-        for room in self.rooms:
-            members = room.members
-            best_answer = 0
-            best_time = self.time_limit
-            winner = 'nobody'
-            for member in members:
-                msg_handler = self.find_handler(member)
-                answer = msg_handler.client['answer']
-                ans_time = msg_handler.client['ans_time']
-                if best_answer < answer <= self.points and ans_time < best_time:
-                    best_answer = answer
-                    best_time = ans_time
-                    winner = msg_handler
-            if winner != 'nobody':
-                winner.client['game_reply'] = WIN_GAME
+    def find_room(self, room_id):
+        rooms = self.rooms
+        for room in rooms:
+            if room.name == room_id:
+                return room
 
-            for member in members:
-                msg_handler = self.find_handler(member)
-                msg_handler.data_to_send = msg_handler.client['game_reply']
-                msg_handler.is_writable = True
+    def announce_results(self, room):
+        members = room.members
+        best_answer = 0
+        best_time = self.time_limit
+        winner = 'nobody'
+        for member in members:
+            msg_handler = self.find_handler(member)
+            answer = msg_handler.client['answer']
+            ans_time = msg_handler.client['ans_time']
+            if best_answer < answer <= self.points and ans_time < best_time:
+                best_answer = answer
+                best_time = ans_time
+                winner = msg_handler
+        if winner != 'nobody':
+            winner.client['game_reply'] = WIN_GAME
 
-        # for current_room in self.rooms:
-        #     for member in current_room.members:
-        #         msg_handler = self.find_handler(member)
-        #         msg_handler.client['answer'] = -1
-        #         msg_handler.client['ans_time'] = -1
-        #         msg_handler.client['game_reply'] = LOSE_GAME
+        for member in members:
+            msg_handler = self.find_handler(member)
+            msg_handler.data_to_send = msg_handler.client['game_reply']
+            msg_handler.is_writable = True
 
-        #threading.Timer(60, self.loop_game).start() # next game
+            msg_handler.client['answer'] = -1
+            msg_handler.client['ans_time'] = -1
+            msg_handler.client['game_reply'] = LOSE_GAME
+            msg_handler.client['ready'] = False
+
+        # threading.Timer(60, self.loop_game).start()     # next game
+
 
 class Room(object):
     def __init__(self, name, owner, members):
@@ -338,6 +339,7 @@ class Room(object):
         self.owner = owner
         self.members = members
         self.number = 1
+        self.game_flag = False
 
 
 server = GameServer('localhost', 6666)

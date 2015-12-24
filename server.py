@@ -120,16 +120,15 @@ class MsgHandler(asyncore.dispatcher):
             users = json.load(file)
         for user in users['accounts']:
             if user['name'] == self.client['name']:
-                user['online_time'] += delta_time.seconds
+                user['online_time'] += delta_time.seconds/60.0
                 break
         with open(self.server.database, 'w') as file:
             json.dump(users, file)
 
-        self.client['name'] = 'visitor'
-        self.client['is_online'] = False
-        self.client['logtime'] = 0
-
         if self.client['room_id'] == -1:
+            self.client['name'] = 'visitor'
+            self.client['is_online'] = False
+            self.client['logtime'] = 0
             return SUCCESS_LOGOUT
 
         room = self.server.find_room(self.client['room_id'])
@@ -148,6 +147,9 @@ class MsgHandler(asyncore.dispatcher):
             self.data_to_send = SUCCESS_QROOM
             self.is_writable = True
 
+        self.client['name'] = 'visitor'
+        self.client['is_online'] = False
+        self.client['logtime'] = 0
         self.client['room_id'] = -1
         self.client['is_owner'] = False
 
@@ -190,6 +192,8 @@ class MsgHandler(asyncore.dispatcher):
         player = self.client['name'] + ':'
         data = room_msg + player + data + '\n'
         room = self.server.find_room(self.client['room_id'])
+        if room is None:
+            return CHAT_MSG
         for member in room.members:
             msg_handler = self.server.find_handler(member)
             msg_handler.client['chat_msg'].append(data)
@@ -206,6 +210,8 @@ class MsgHandler(asyncore.dispatcher):
             chat += lists[i] + ' '
         chat = private_msg + player + chat + '\n'
         msg_handler = self.server.find_handler(name)
+        if msg_handler is None:
+            return CHAT_MSG
         msg_handler.client['chat_msg'].append(chat)
         return CHAT_MSG + chat
 
@@ -231,6 +237,8 @@ class MsgHandler(asyncore.dispatcher):
         for room in rooms:
             if room.name == room_name:
                 return FAIL_CROOM
+        if self.client['room_id'] != -1:
+            return ONLY_ROOM
         self.client['room_id'] = room_name
         self.client['is_owner'] = True
         rooms.append(Room(room_name, self.client['name'], [self.client['name']]))
@@ -239,6 +247,9 @@ class MsgHandler(asyncore.dispatcher):
 
     def __handle_enter_room_msg(self, msg):
         room_name = str(msg)
+
+        if self.client['room_id'] != -1:
+            return ONLY_ROOM
         rooms = self.server.rooms
         for room in rooms:
             if room.name == room_name:
@@ -263,6 +274,10 @@ class MsgHandler(asyncore.dispatcher):
     def __handle_quit_room_msg(self, msg):
         data = str(msg)
         room_name = self.client['room_id']
+
+        if room_name == -1:
+            return NOT_IN_ROOM
+
         if data and data != room_name:
             return FAIL_QROOM
 
@@ -340,6 +355,8 @@ class GameServer(asyncore.dispatcher):
         self.time_limit = 15
         self.points = 21
 
+        print 'Game server starts!'
+
     def handle_accept(self):
         sock, addr = self.accept()
         print 'Incoming connection from %s' % repr(addr)
@@ -385,12 +402,14 @@ class GameServer(asyncore.dispatcher):
         for msg_handler in msg_handlers:
             if msg_handler.client['name'] == name:
                 return msg_handler
+        return None
 
     def find_room(self, room_id):
         rooms = self.rooms
         for room in rooms:
             if room.name == room_id:
                 return room
+        return None
 
     def announce_results(self, room):
         members = room.members

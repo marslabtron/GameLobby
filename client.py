@@ -2,6 +2,7 @@
 import asyncore
 import socket
 import datetime
+import sys
 from commands import *
 
 
@@ -132,6 +133,8 @@ class GameClient(asyncore.dispatcher):
             self.cmd_to_send()
         elif self.data_to_receive == SUCCESS_EROOM:
             self.cmd_to_send()
+        elif self.data_to_receive == ONLY_ROOM or self.data_to_receive == NOT_IN_ROOM:
+            self.cmd_to_send()
         elif self.data_to_receive == SUCCESS_QROOM or self.data_to_receive == DISMISS_ROOM:
             self.cmd_to_send()
         elif CURRENT_ROOMS in self.data_to_receive:
@@ -162,5 +165,5 @@ class GameClient(asyncore.dispatcher):
         self.is_writable = False
 
 
-client = GameClient('localhost', 6666)
+client = GameClient(sys.argv[1], int(sys.argv[2]))
 asyncore.loop()

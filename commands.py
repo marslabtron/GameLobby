@@ -26,6 +26,8 @@ NEW_ACCOUNT = 'New account created. Now login again.'
 SUCCESS_CROOM = 'Successful creating room! Now you can play game in the room.\n' \
                 'You can chat with others or input "start" to wait for the game, it\'ll start half-hourly...'
 FAIL_CROOM = 'The room already exists! Please change the room name.'
+ONLY_ROOM = 'You are already in a room.'
+NOT_IN_ROOM = 'You are not in a room.'
 SUCCESS_EROOM = 'Successful entering room! Now you can play game in the room.\n' \
                 'You can chat with others or input "start" to wait for the game, it\'ll start half-hourly...'
 FAIL_EROOM = 'No such room exists!'

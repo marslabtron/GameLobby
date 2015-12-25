@@ -1,5 +1,5 @@
 
-import asyncore
+import lazy_asyncore
 import socket
 import json
 import datetime
@@ -8,9 +8,9 @@ from random import randint
 from commands import *
 
 
-class MsgHandler(asyncore.dispatcher):
+class MsgHandler(lazy_asyncore.dispatcher):
     def __init__(self, socket):
-        asyncore.dispatcher.__init__(self, socket)
+        lazy_asyncore.dispatcher.__init__(self, socket)
         self.is_writable = False
         self.is_readable = True
         self.data_to_send = ''
@@ -339,10 +339,10 @@ class MsgHandler(asyncore.dispatcher):
         return DEALED_MSG
 
 
-class GameServer(asyncore.dispatcher):
+class GameServer(lazy_asyncore.dispatcher):
     def __init__(self, host, port):
         # communications
-        asyncore.dispatcher.__init__(self)
+        lazy_asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind((host, port))
@@ -448,4 +448,4 @@ class Room(object):
 
 
 server = GameServer('localhost', 6666)
-asyncore.loop()
+lazy_asyncore.loop()

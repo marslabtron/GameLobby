@@ -1,14 +1,14 @@
 
-import asyncore
+import lazy_asyncore
 import socket
 import datetime
 import sys
 from commands import *
 
 
-class GameClient(asyncore.dispatcher):
+class GameClient(lazy_asyncore.dispatcher):
     def __init__(self, host, port):
-        asyncore.dispatcher.__init__(self)
+        lazy_asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connect((host, port))
 
@@ -166,4 +166,4 @@ class GameClient(asyncore.dispatcher):
 
 
 client = GameClient(sys.argv[1], int(sys.argv[2]))
-asyncore.loop()
+lazy_asyncore.loop()
